@@ -18,10 +18,23 @@ for ($i=1;$i<$numfiles;$i++) {
 	cmiss("gfx read node @exnodes[$i] time $i");
 	}
 	
-print "@exnodes"
-gfx create window
-gfx edit scene
-gfx edit spectrum
-gfx list node 5
+
+# gfx edit scene
+gfx create window 1
+# gfx edit spectrum
+# gfx list node 5
 gfx modify g_element "/" general clear;
-gfx modify g_element "/" points domain_nodes coordinate coordinates tessellation default_points LOCAL glyph sphere size "1*1*1" offset 0,0,0 font default select_on material default data dependent spectrum default selected_material default_selected render_shaded;
+gfx modify g_element "/" points domain_nodes coordinate coordinates tessellation default_points LOCAL glyph sphere size "0.1*0.1*0.1" offset 0,0,0 font default select_on material default data dependent spectrum default selected_material default_selected render_shaded;
+gfx mod win 1 layout width 500 height 500
+gfx modify window 1 image view_all
+gfx modify spectrum default linear reverse range 0 0.00055 extend_above extend_below rainbow colour_range 0 1 component 1;
+
+
+# gfx timekeeper default play speed 1 skip;
+# gfx create time_editor
+
+for($t=0;$t<$numfiles;$t++){
+    gfx timekeeper default set_time $t
+        $image = "TIME_STEP_SPEC_1.".sprintf("%04d",$t).".jpg"
+        cmiss("gfx print jpg file $image")
+    }
