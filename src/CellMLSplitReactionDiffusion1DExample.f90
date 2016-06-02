@@ -66,8 +66,8 @@ PROGRAM CELLMLSPLITREACTIONDIFFUSION1DEXAMPLE
 
 
   !Test program parameters
-  !you can change this parameter to change the length of the line
-  REAL(CMISSRP), PARAMETER :: LENGTH=100.0_CMISSRP
+  !you can change this parameter to change the length of the line in microns
+  REAL(CMISSRP), PARAMETER :: LENGTH=10.0_CMISSRP
   
   INTEGER(CMISSIntg), PARAMETER :: CoordinateSystemUserNumber=1
   INTEGER(CMISSIntg), PARAMETER :: RegionUserNumber=2
@@ -88,45 +88,37 @@ PROGRAM CELLMLSPLITREACTIONDIFFUSION1DEXAMPLE
   INTEGER(CMISSIntg), PARAMETER :: CellMLIntermediateFieldUserNumber=17
   INTEGER(CMISSIntg), PARAMETER :: CellMLParametersFieldUserNumber=18
   INTEGER(CMISSIntg), PARAMETER :: CompartmentTypeFieldUserNumber=19
+  INTEGER(CMISSIntg), PARAMETER :: NaiSourceFieldUserNumber=20
 
-  INTEGER(CMISSIntg), PARAMETER :: NaiSourceFieldUserNumber=24
+INTEGER(CMISSIntg), PARAMETER :: FluoFieldUserNumber=21
+INTEGER(CMISSIntg), PARAMETER :: FluoMaterialsFieldUserNumber=22
+INTEGER(CMISSIntg), PARAMETER :: FluoEquationsSetUserNumber=23
+INTEGER(CMISSIntg), PARAMETER :: FluoEquationsSetFieldUserNumber=24
+INTEGER(CMISSIntg), PARAMETER :: FluoSourceFieldUserNumber=25
 
-!
-!INTEGER(CMISSIntg), PARAMETER :: TRPNFieldUserNumber=20
-!INTEGER(CMISSIntg), PARAMETER :: TRPNMaterialsFieldUserNumber=21
-!INTEGER(CMISSIntg), PARAMETER :: TRPNEquationsSetUserNumber=22
-!INTEGER(CMISSIntg), PARAMETER :: TRPNEquationsSetFieldUserNumber=23
-!INTEGER(CMISSIntg), PARAMETER :: TRPNSourceFieldUserNumber=24
-!
-!INTEGER(CMISSIntg), PARAMETER :: CaSRFieldUserNumber=25
-!INTEGER(CMISSIntg), PARAMETER :: CaSRMaterialsFieldUserNumber=26
-!INTEGER(CMISSIntg), PARAMETER :: CaSREquationsSetUserNumber=27
-!INTEGER(CMISSIntg), PARAMETER :: CaSREquationsSetFieldUserNumber=28
-!INTEGER(CMISSIntg), PARAMETER :: CaSRSourceFieldUserNumber=29
-!
-!INTEGER(CMISSIntg), PARAMETER :: ZOneFieldUserNumber=30
-!INTEGER(CMISSIntg), PARAMETER :: ZOneMaterialsFieldUserNumber=31
-!INTEGER(CMISSIntg), PARAMETER :: ZOneEquationsSetUserNumber=32
-!INTEGER(CMISSIntg), PARAMETER :: ZOneEquationsSetFieldUserNumber=33
-!INTEGER(CMISSIntg), PARAMETER :: ZOneSourceFieldUserNumber=34
-!
-!INTEGER(CMISSIntg), PARAMETER :: ZTwoFieldUserNumber=35
-!INTEGER(CMISSIntg), PARAMETER :: ZTwoMaterialsFieldUserNumber=36
-!INTEGER(CMISSIntg), PARAMETER :: ZTwoEquationsSetUserNumber=37
-!INTEGER(CMISSIntg), PARAMETER :: ZTwoEquationsSetFieldUserNumber=38
-!INTEGER(CMISSIntg), PARAMETER :: ZTwoSourceFieldUserNumber=39
-!
-!INTEGER(CMISSIntg), PARAMETER :: ZThreeFieldUserNumber=40
-!INTEGER(CMISSIntg), PARAMETER :: ZThreeMaterialsFieldUserNumber=41
-!INTEGER(CMISSIntg), PARAMETER :: ZThreeEquationsSetUserNumber=42
-!INTEGER(CMISSIntg), PARAMETER :: ZThreeEquationsSetFieldUserNumber=43
-!INTEGER(CMISSIntg), PARAMETER :: ZThreeSourceFieldUserNumber=44
+INTEGER(CMISSIntg), PARAMETER :: CaFluoFieldUserNumber=26
+INTEGER(CMISSIntg), PARAMETER :: CaFluoMaterialsFieldUserNumber=27
+INTEGER(CMISSIntg), PARAMETER :: CaFluoEquationsSetUserNumber=28
+INTEGER(CMISSIntg), PARAMETER :: CaFluoEquationsSetFieldUserNumber=29
+INTEGER(CMISSIntg), PARAMETER :: CaFluoSourceFieldUserNumber=30
+
+INTEGER(CMISSIntg), PARAMETER :: mBufFieldUserNumber=31
+INTEGER(CMISSIntg), PARAMETER :: mBufMaterialsFieldUserNumber=32
+INTEGER(CMISSIntg), PARAMETER :: mBufEquationsSetUserNumber=33
+INTEGER(CMISSIntg), PARAMETER :: mBufEquationsSetFieldUserNumber=34
+INTEGER(CMISSIntg), PARAMETER :: mBufSourceFieldUserNumber=35
+
+INTEGER(CMISSIntg), PARAMETER :: CamBufFieldUserNumber=36
+INTEGER(CMISSIntg), PARAMETER :: CamBufMaterialsFieldUserNumber=37
+INTEGER(CMISSIntg), PARAMETER :: CamBufEquationsSetUserNumber=38
+INTEGER(CMISSIntg), PARAMETER :: CamBufEquationsSetFieldUserNumber=39
+INTEGER(CMISSIntg), PARAMETER :: CamBufSourceFieldUserNumber=40
 
   !Program types
   
   !Program variables
 
-  INTEGER(CMISSIntg) :: NUMBER_GLOBAL_X_ELEMENTS,CONDITION
+  INTEGER(CMISSIntg) :: NUMBER_GLOBAL_X_ELEMENTS,CONDITION,ElemMap
   INTEGER(CMISSIntg) :: NUMBER_OF_DOMAINS,NODE_NUMBER,NodeDomain
   INTEGER(CMISSIntg),DIMENSION(2) :: BCNODES
   INTEGER(CMISSIntg) :: MPI_IERROR
@@ -158,16 +150,18 @@ PROGRAM CELLMLSPLITREACTIONDIFFUSION1DEXAMPLE
   TYPE(cmfe_CellMLType) :: CellML
   TYPE(cmfe_CellMLEquationsType) :: CellMLEquations
   TYPE(cmfe_FieldType) :: CellMLModelsField,CellMLStateField,CellMLIntermediateField,CellMLParametersField
-!
-!TYPE(cmfe_FieldType) :: TRPNField,TRPNMaterialsField,TRPNEquationsSetField,TRPNSourceField
-!TYPE(cmfe_FieldType) :: CaSRField,CaSRMaterialsField,CaSREquationsSetField,CaSRSourceField
-!TYPE(cmfe_FieldType) :: ZOneField,ZOneMaterialsField,ZOneEquationsSetField,ZOneSourceField
-!TYPE(cmfe_FieldType) :: ZTwoField,ZTwoMaterialsField,ZTwoEquationsSetField,ZTwoSourceField
-!TYPE(cmfe_FieldType) :: ZThreeField,ZThreeMaterialsField,ZThreeEquationsSetField,ZThreeSourceField
+  TYPE(cmfe_FieldType) :: CompartmentTypeField
 
-TYPE(cmfe_EquationsType) :: TRPNEquations, CaSREquations,ZOneEquations, ZTwoEquations,ZThreeEquations
+  ! Define buffer variables
+  TYPE(cmfe_FieldType) :: FluoField,FluoMaterialsField,FluoEquationsSetField,FluoSourceField
+  TYPE(cmfe_FieldType) :: CaFluoField,CaFluoMaterialsField,CaFluoEquationsSetField,CaFluoSourceField
+  TYPE(cmfe_FieldType) :: mBufField,mBufMaterialsField,mBufEquationsSetField,mBufSourceField
+  TYPE(cmfe_FieldType) :: CamBufField,CamBufMaterialsField,CamBufEquationsSetField,CamBufSourceField
 
-  TYPE(cmfe_EquationsSetType) :: TRPNEquationsSet, CaSREquationsSet,ZOneEquationsSet, ZTwoEquationsSet,ZThreeEquationsSet
+  TYPE(cmfe_EquationsType) :: FluoEquations, CaFluoEquations,mBufEquations, CamBufEquations
+  TYPE(cmfe_EquationsSetType) :: FluoEquationsSet, CaFluoEquationsSet,mBufEquationsSet, CamBufEquationsSet
+
+
   LOGICAL :: EXPORT_FIELD
 
 #ifdef WIN32
@@ -203,7 +197,8 @@ TYPE(cmfe_EquationsType) :: TRPNEquations, CaSREquations,ZOneEquations, ZTwoEqua
 
   !*******************************************************************************
   ! YOU CAN CHANGE THIS to change the refinement of your 1D line.
-  NUMBER_GLOBAL_X_ELEMENTS=10
+  ! Greg's data has a resolution of ~0.5 microns
+  NUMBER_GLOBAL_X_ELEMENTS=20
   !*******************************************************************************
 
   NUMBER_OF_DOMAINS=NumberOfComputationalNodes
@@ -275,6 +270,9 @@ TYPE(cmfe_EquationsType) :: TRPNEquations, CaSREquations,ZOneEquations, ZTwoEqua
   !Update the geometric field parameters
   CALL cmfe_GeneratedMesh_GeometricParametersCalculate(GeneratedMesh,GeometricField,Err)
 
+
+
+
 !*************Dependent Field*******************
   !Create the cellml reaction with split reaction diffusion equations_set
   CALL cmfe_EquationsSet_Initialise(EquationsSet,Err)
@@ -297,207 +295,223 @@ TYPE(cmfe_EquationsType) :: TRPNEquations, CaSREquations,ZOneEquations, ZTwoEqua
   CALL cmfe_Field_Initialise(MaterialsField,Err)
   CALL cmfe_EquationsSet_MaterialsCreateStart(EquationsSet,MaterialsFieldUserNumber,MaterialsField,Err)
   CALL cmfe_Field_VariableLabelSet(MaterialsField,CMFE_FIELD_U_VARIABLE_TYPE,"Materials Field",Err)
+!Specify the interpolation
+CALL cmfe_Field_ComponentInterpolationSet(MaterialsField,cmfe_FIELD_U_VARIABLE_TYPE,1, &
+& cmfe_FIELD_ELEMENT_BASED_INTERPOLATION,ERR)
   !Finish the equations set materials field variables
   CALL cmfe_EquationsSet_MaterialsCreateFinish(EquationsSet,Err)
 
-!!!! Added Stuff
-!!*************TRPN Field*******************
-!!Create the cellml reaction with split reaction diffusion equations_set
-!CALL cmfe_EquationsSet_Initialise(TRPNEquationsSet,Err)
-!CALL cmfe_Field_Initialise(TRPNEquationsSetField,Err)
-!CALL cmfe_EquationsSet_CreateStart(TRPNEquationsSetUserNumber,Region,GeometricField,[CMFE_EQUATIONS_SET_CLASSICAL_FIELD_CLASS, &
-!& CMFE_EQUATIONS_SET_REACTION_DIFFUSION_EQUATION_TYPE,CMFE_EQUATIONS_SET_CELLML_REAC_SPLIT_REAC_DIFF_SUBTYPE], &
-!& TRPNEquationsSetFieldUserNumber,TRPNEquationsSetField,TRPNEquationsSet,Err)
-!!Finish creating the equations set
-!CALL cmfe_EquationsSet_CreateFinish(TRPNEquationsSet,Err)
-!
-!!Create the equations set dependent field variables
-!CALL cmfe_Field_Initialise(TRPNField,Err)
-!CALL cmfe_EquationsSet_DependentCreateStart(TRPNEquationsSet,TRPNFieldUserNumber,TRPNField,Err)
-!CALL cmfe_Field_VariableLabelSet(TRPNField,CMFE_FIELD_U_VARIABLE_TYPE,"TRPN Field",Err)
-!!Finish the equations set dependent field variables
-!CALL cmfe_EquationsSet_DependentCreateFinish(TRPNEquationsSet,Err)
-!
-!!Create the equations set material field variables
-!!by default 2 comps for reac diff i.e. diff coeff in 1 direction set constant spatially = 1, and storage coeff set to 1
-!CALL cmfe_Field_Initialise(TRPNMaterialsField,Err)
-!CALL cmfe_EquationsSet_MaterialsCreateStart(TRPNEquationsSet,TRPNMaterialsFieldUserNumber,TRPNMaterialsField,Err)
-!CALL cmfe_Field_VariableLabelSet(TRPNMaterialsField,CMFE_FIELD_U_VARIABLE_TYPE,"TRPN Materials Field",Err)
-!!Finish the equations set materials field variables
-!CALL cmfe_EquationsSet_MaterialsCreateFinish(TRPNEquationsSet,Err)
-!
-!!*************CaSR Field*******************
-!!Create the cellml reaction with split reaction diffusion equations_set
-!CALL cmfe_EquationsSet_Initialise(CaSREquationsSet,Err)
-!CALL cmfe_Field_Initialise(CaSREquationsSetField,Err)
-!CALL cmfe_EquationsSet_CreateStart(CaSREquationsSetUserNumber,Region,GeometricField,[CMFE_EQUATIONS_SET_CLASSICAL_FIELD_CLASS, &
-!& CMFE_EQUATIONS_SET_REACTION_DIFFUSION_EQUATION_TYPE,CMFE_EQUATIONS_SET_CELLML_REAC_SPLIT_REAC_DIFF_SUBTYPE], &
-!& CaSREquationsSetFieldUserNumber,CaSREquationsSetField,CaSREquationsSet,Err)
-!!Finish creating the equations set
-!CALL cmfe_EquationsSet_CreateFinish(CaSREquationsSet,Err)
-!
-!!Create the equations set dependent field variables
-!CALL cmfe_Field_Initialise(CaSRField,Err)
-!CALL cmfe_EquationsSet_DependentCreateStart(CaSREquationsSet,CaSRFieldUserNumber,CaSRField,Err)
-!CALL cmfe_Field_VariableLabelSet(CaSRField,CMFE_FIELD_U_VARIABLE_TYPE,"CaSR Field",Err)
-!!Finish the equations set dependent field variables
-!CALL cmfe_EquationsSet_DependentCreateFinish(CaSREquationsSet,Err)
-!
-!!Create the equations set material field variables
-!!by default 2 comps for reac diff i.e. diff coeff in 1 direction set constant spatially = 1, and storage coeff set to 1
-!CALL cmfe_Field_Initialise(CaSRMaterialsField,Err)
-!CALL cmfe_EquationsSet_MaterialsCreateStart(CaSREquationsSet,CaSRMaterialsFieldUserNumber,CaSRMaterialsField,Err)
-!CALL cmfe_Field_VariableLabelSet(CaSRMaterialsField,CMFE_FIELD_U_VARIABLE_TYPE,"CaSR Materials Field",Err)
-!!Finish the equations set materials field variables
-!CALL cmfe_EquationsSet_MaterialsCreateFinish(CaSREquationsSet,Err)
-!
-!!*************ZOne Field*******************
-!!Create the cellml reaction with split reaction diffusion equations_set
-!CALL cmfe_EquationsSet_Initialise(ZOneEquationsSet,Err)
-!CALL cmfe_Field_Initialise(ZOneEquationsSetField,Err)
-!CALL cmfe_EquationsSet_CreateStart(ZOneEquationsSetUserNumber,Region,GeometricField,[CMFE_EQUATIONS_SET_CLASSICAL_FIELD_CLASS, &
-!& CMFE_EQUATIONS_SET_REACTION_DIFFUSION_EQUATION_TYPE,CMFE_EQUATIONS_SET_CELLML_REAC_SPLIT_REAC_DIFF_SUBTYPE], &
-!& ZOneEquationsSetFieldUserNumber,ZOneEquationsSetField,ZOneEquationsSet,Err)
-!!Finish creating the equations set
-!CALL cmfe_EquationsSet_CreateFinish(ZOneEquationsSet,Err)
-!
-!!Create the equations set dependent field variables
-!CALL cmfe_Field_Initialise(ZOneField,Err)
-!CALL cmfe_EquationsSet_DependentCreateStart(ZOneEquationsSet,ZOneFieldUserNumber,ZOneField,Err)
-!CALL cmfe_Field_VariableLabelSet(ZOneField,CMFE_FIELD_U_VARIABLE_TYPE,"ZOne Field",Err)
-!!Finish the equations set dependent field variables
-!CALL cmfe_EquationsSet_DependentCreateFinish(ZOneEquationsSet,Err)
-!
-!!Create the equations set material field variables
-!!by default 2 comps for reac diff i.e. diff coeff in 1 direction set constant spatially = 1, and storage coeff set to 1
-!CALL cmfe_Field_Initialise(ZOneMaterialsField,Err)
-!CALL cmfe_EquationsSet_MaterialsCreateStart(ZOneEquationsSet,ZOneMaterialsFieldUserNumber,ZOneMaterialsField,Err)
-!CALL cmfe_Field_VariableLabelSet(ZOneMaterialsField,CMFE_FIELD_U_VARIABLE_TYPE,"ZOne Materials Field",Err)
-!!Finish the equations set materials field variables
-!CALL cmfe_EquationsSet_MaterialsCreateFinish(ZOneEquationsSet,Err)
-!
-!
-!!*************ZTwo Field*******************
-!!Create the cellml reaction with split reaction diffusion equations_set
-!CALL cmfe_EquationsSet_Initialise(ZTwoEquationsSet,Err)
-!CALL cmfe_Field_Initialise(ZTwoEquationsSetField,Err)
-!CALL cmfe_EquationsSet_CreateStart(ZTwoEquationsSetUserNumber,Region,GeometricField,[CMFE_EQUATIONS_SET_CLASSICAL_FIELD_CLASS, &
-!& CMFE_EQUATIONS_SET_REACTION_DIFFUSION_EQUATION_TYPE,CMFE_EQUATIONS_SET_CELLML_REAC_SPLIT_REAC_DIFF_SUBTYPE], &
-!& ZTwoEquationsSetFieldUserNumber,ZTwoEquationsSetField,ZTwoEquationsSet,Err)
-!!Finish creating the equations set
-!CALL cmfe_EquationsSet_CreateFinish(ZTwoEquationsSet,Err)
-!
-!!Create the equations set dependent field variables
-!CALL cmfe_Field_Initialise(ZTwoField,Err)
-!CALL cmfe_EquationsSet_DependentCreateStart(ZTwoEquationsSet,ZTwoFieldUserNumber,ZTwoField,Err)
-!CALL cmfe_Field_VariableLabelSet(ZTwoField,CMFE_FIELD_U_VARIABLE_TYPE,"ZTwo Field",Err)
-!!Finish the equations set dependent field variables
-!CALL cmfe_EquationsSet_DependentCreateFinish(ZTwoEquationsSet,Err)
-!
-!!Create the equations set material field variables
-!!by default 2 comps for reac diff i.e. diff coeff in 1 direction set constant spatially = 1, and storage coeff set to 1
-!CALL cmfe_Field_Initialise(ZTwoMaterialsField,Err)
-!CALL cmfe_EquationsSet_MaterialsCreateStart(ZTwoEquationsSet,ZTwoMaterialsFieldUserNumber,ZTwoMaterialsField,Err)
-!CALL cmfe_Field_VariableLabelSet(ZTwoMaterialsField,CMFE_FIELD_U_VARIABLE_TYPE,"ZTwo Materials Field",Err)
-!!Finish the equations set materials field variables
-!CALL cmfe_EquationsSet_MaterialsCreateFinish(ZTwoEquationsSet,Err)
-!
-!
-!!*************ZThree Field*******************
-!!Create the cellml reaction with split reaction diffusion equations_set
-!CALL cmfe_EquationsSet_Initialise(ZThreeEquationsSet,Err)
-!CALL cmfe_Field_Initialise(ZThreeEquationsSetField,Err)
-!CALL cmfe_EquationsSet_CreateStart(ZThreeEquationsSetUserNumber,Region,GeometricField,[CMFE_EQUATIONS_SET_CLASSICAL_FIELD_CLASS, &
-!& CMFE_EQUATIONS_SET_REACTION_DIFFUSION_EQUATION_TYPE,CMFE_EQUATIONS_SET_CELLML_REAC_SPLIT_REAC_DIFF_SUBTYPE], &
-!& ZThreeEquationsSetFieldUserNumber,ZThreeEquationsSetField,ZThreeEquationsSet,Err)
-!!Finish creating the equations set
-!CALL cmfe_EquationsSet_CreateFinish(ZThreeEquationsSet,Err)
-!
-!!Create the equations set dependent field variables
-!CALL cmfe_Field_Initialise(ZThreeField,Err)
-!CALL cmfe_EquationsSet_DependentCreateStart(ZThreeEquationsSet,ZThreeFieldUserNumber,ZThreeField,Err)
-!CALL cmfe_Field_VariableLabelSet(ZThreeField,CMFE_FIELD_U_VARIABLE_TYPE,"ZThree Field",Err)
-!!Finish the equations set dependent field variables
-!CALL cmfe_EquationsSet_DependentCreateFinish(ZThreeEquationsSet,Err)
-!
-!!Create the equations set material field variables
-!!by default 2 comps for reac diff i.e. diff coeff in 1 direction set constant spatially = 1, and storage coeff set to 1
-!CALL cmfe_Field_Initialise(ZThreeMaterialsField,Err)
-!CALL cmfe_EquationsSet_MaterialsCreateStart(ZThreeEquationsSet,ZThreeMaterialsFieldUserNumber,ZThreeMaterialsField,Err)
-!CALL cmfe_Field_VariableLabelSet(ZThreeMaterialsField,CMFE_FIELD_U_VARIABLE_TYPE,"ZThree Materials Field",Err)
-!!Finish the equations set materials field variables
-!CALL cmfe_EquationsSet_MaterialsCreateFinish(ZThreeEquationsSet,Err)
+! Buffer Fields
 
+!################( Fluo )#############################################################--->
 
+!Create Fluo  reaction diffusion with constant source equations_set
+CALL cmfe_EquationsSet_Initialise(FluoEquationsSet,Err)
+CALL cmfe_Field_Initialise(FluoEquationsSetField,Err)
+CALL cmfe_EquationsSet_CreateStart(FluoEquationsSetUserNumber,Region,GeometricField,[CMFE_EQUATIONS_SET_CLASSICAL_FIELD_CLASS, &
+& CMFE_EQUATIONS_SET_REACTION_DIFFUSION_EQUATION_TYPE,CMFE_EQUATIONS_SET_CELLML_REAC_SPLIT_REAC_DIFF_SUBTYPE], &
+& FluoEquationsSetFieldUserNumber,FluoEquationsSetField,FluoEquationsSet,Err)
+CALL cmfe_EquationsSet_CreateFinish(FluoEquationsSet,Err)
+
+CALL cmfe_Field_Initialise(FluoField,Err)
+CALL cmfe_EquationsSet_DependentCreateStart(FluoEquationsSet,FluoFieldUserNumber,FluoField,Err)
+CALL cmfe_Field_VariableLabelSet(FluoField,cmfe_FIELD_U_VARIABLE_TYPE,"Fluo Field",Err)
+CALL cmfe_EquationsSet_DependentCreateFinish(FluoEquationsSet,Err)
+
+CALL cmfe_Field_Initialise(FluoMaterialsField,Err)
+CALL cmfe_EquationsSet_MaterialsCreateStart(FluoEquationsSet,FluoMaterialsFieldUserNumber,FluoMaterialsField,Err)
+CALL cmfe_Field_VariableLabelSet(FluoMaterialsField,CMFE_FIELD_U_VARIABLE_TYPE,"Fluo Materials Field",Err)
+CALL cmfe_EquationsSet_MaterialsCreateFinish(FluoEquationsSet,Err)
+
+! Change second last variable to change diffusivity
+CALL cmfe_Field_ComponentValuesInitialise(FluoMaterialsField,cmfe_FIELD_U_VARIABLE_TYPE, &
+& cmfe_FIELD_VALUES_SET_TYPE,1,0.030_CMISSRP,Err)
+CALL cmfe_Field_ComponentValuesInitialise(FluoMaterialsField,CMFE_FIELD_U_VARIABLE_TYPE,CMFE_FIELD_VALUES_SET_TYPE, &
+& 2,1.0_CMISSRP,Err) ! storage coefficient
+
+!CALL cmfe_Field_ParameterSetUpdateStart(FluoMaterialsField,cmfe_FIELD_U_VARIABLE_TYPE,cmfe_FIELD_VALUES_SET_TYPE,Err)
+!CALL cmfe_Field_ParameterSetUpdateFinish(FluoMaterialsField,cmfe_FIELD_U_VARIABLE_TYPE,cmfe_FIELD_VALUES_SET_TYPE,Err)
+
+!Set up source field for reaction diffusion equation set. Note that for the split problem subtype, the source field is not useall.
+CALL cmfe_Field_Initialise(FluoSourceField,Err)
+CALL cmfe_EquationsSet_SourceCreateStart(FluoEquationsSet,FluoSourceFieldUserNumber,FluoSourceField,Err)
+CALL cmfe_Field_VariableLabelSet(FluoSourceField,cmfe_FIELD_U_VARIABLE_TYPE,"Fluo Source Field",Err)
+!Finish the equations set source field variables
+CALL cmfe_EquationsSet_SourceCreateFinish(FluoEquationsSet,Err)
+CALL cmfe_Field_ComponentValuesInitialise(FluoSourceField,cmfe_FIELD_U_VARIABLE_TYPE, &
+& cmfe_FIELD_VALUES_SET_TYPE,1,0.0_CMISSDP,Err)  !Set the equations set to be a standard Diffusion no source problem
+!Finish creating the equations set
+
+!################( CaFluo )#############################################################--->
+
+!Create CaFluo reaction diffusion with split reaction diffusion equations_set
+CALL cmfe_EquationsSet_Initialise(CaFluoEquationsSet,Err)
+CALL cmfe_Field_Initialise(CaFluoEquationsSetField,Err)
+CALL cmfe_EquationsSet_CreateStart(CaFluoEquationsSetUserNumber,Region,GeometricField,[CMFE_EQUATIONS_SET_CLASSICAL_FIELD_CLASS, &
+& CMFE_EQUATIONS_SET_REACTION_DIFFUSION_EQUATION_TYPE,CMFE_EQUATIONS_SET_CELLML_REAC_SPLIT_REAC_DIFF_SUBTYPE], &
+& CaFluoEquationsSetFieldUserNumber,CaFluoEquationsSetField,CaFluoEquationsSet,Err)
+! Finish creating the equations set
+CALL cmfe_EquationsSet_CreateFinish(CaFluoEquationsSet,Err)
+! Create the equations set dependent field variables
+CALL cmfe_Field_Initialise(CaFluoField,Err)
+CALL cmfe_EquationsSet_DependentCreateStart(CaFluoEquationsSet,CaFluoFieldUserNumber,CaFluoField,Err)
+CALL cmfe_Field_VariableLabelSet(CaFluoField,cmfe_FIELD_U_VARIABLE_TYPE,"CaFluo Field",Err)
+CALL cmfe_EquationsSet_DependentCreateFinish(CaFluoEquationsSet,Err)
+! Create the equations set material field variables
+CALL cmfe_Field_Initialise(CaFluoMaterialsField,Err)
+CALL cmfe_EquationsSet_MaterialsCreateStart(CaFluoEquationsSet,CaFluoMaterialsFieldUserNumber,CaFluoMaterialsField,Err)
+CALL cmfe_Field_VariableLabelSet(CaFluoMaterialsField,CMFE_FIELD_U_VARIABLE_TYPE,"CaFluo Materials Field",Err)
+CALL cmfe_EquationsSet_MaterialsCreateFinish(CaFluoEquationsSet,Err)
+
+! Change second last variable to change diffusivity
+CALL cmfe_Field_ComponentValuesInitialise(CaFluoMaterialsField,cmfe_FIELD_U_VARIABLE_TYPE, &
+& cmfe_FIELD_VALUES_SET_TYPE, &
+& 1,0.030_CMISSRP,Err)
+! Change the storage coefficient
+CALL cmfe_Field_ComponentValuesInitialise(CaFluoMaterialsField,CMFE_FIELD_U_VARIABLE_TYPE,CMFE_FIELD_VALUES_SET_TYPE, &
+& 2,1.0_CMISSRP,Err) ! storage coefficient
+
+!!!! Not in earlier version. Nec?
+!CALL cmfe_Field_ParameterSetUpdateStart(CaFluoMaterialsField,cmfe_FIELD_U_VARIABLE_TYPE,cmfe_FIELD_VALUES_SET_TYPE,Err)
+!CALL cmfe_Field_ParameterSetUpdateFinish(CaFluoMaterialsField,cmfe_FIELD_U_VARIABLE_TYPE,cmfe_FIELD_VALUES_SET_TYPE,Err)
+
+!Set up source field for reaction diffusion equation set. Note that for the split problem subtype, the source field is not useall.
+CALL cmfe_Field_Initialise(CaFluoSourceField,Err)
+CALL cmfe_EquationsSet_SourceCreateStart(CaFluoEquationsSet,CaFluoSourceFieldUserNumber,CaFluoSourceField,Err)
+CALL cmfe_Field_VariableLabelSet(CaFluoSourceField,cmfe_FIELD_U_VARIABLE_TYPE,"CaFluo Source Field",Err)
+!Finish the equations set source field variables
+CALL cmfe_EquationsSet_SourceCreateFinish(CaFluoEquationsSet,Err)
+CALL cmfe_Field_ComponentValuesInitialise(CaFluoSourceField,cmfe_FIELD_U_VARIABLE_TYPE, &
+& cmfe_FIELD_VALUES_SET_TYPE,1,0.0_CMISSDP,Err)  !Set the equations set to be a standard Diffusion no source problem
+!Finish creating the equations set
+
+!################( mBuf )#############################################################--->
+
+!Create mBuf  reaction diffusion with constant source equations_set
+CALL cmfe_EquationsSet_Initialise(mBufEquationsSet,Err)
+CALL cmfe_Field_Initialise(mBufEquationsSetField,Err)
+CALL cmfe_EquationsSet_CreateStart(mBufEquationsSetUserNumber,Region,GeometricField,[CMFE_EQUATIONS_SET_CLASSICAL_FIELD_CLASS, &
+& CMFE_EQUATIONS_SET_REACTION_DIFFUSION_EQUATION_TYPE,CMFE_EQUATIONS_SET_CELLML_REAC_SPLIT_REAC_DIFF_SUBTYPE], &
+& mBufEquationsSetFieldUserNumber,mBufEquationsSetField,mBufEquationsSet,Err)
+CALL cmfe_EquationsSet_CreateFinish(mBufEquationsSet,Err)
+
+CALL cmfe_Field_Initialise(mBufField,Err)
+CALL cmfe_EquationsSet_DependentCreateStart(mBufEquationsSet,mBufFieldUserNumber,mBufField,Err)
+CALL cmfe_Field_VariableLabelSet(mBufField,cmfe_FIELD_U_VARIABLE_TYPE,"mBuf Field",Err)
+CALL cmfe_EquationsSet_DependentCreateFinish(mBufEquationsSet,Err)
+
+CALL cmfe_Field_Initialise(mBufMaterialsField,Err)
+CALL cmfe_EquationsSet_MaterialsCreateStart(mBufEquationsSet,mBufMaterialsFieldUserNumber,mBufMaterialsField,Err)
+CALL cmfe_Field_VariableLabelSet(mBufMaterialsField,CMFE_FIELD_U_VARIABLE_TYPE,"mBuf Materials Field",Err)
+CALL cmfe_EquationsSet_MaterialsCreateFinish(mBufEquationsSet,Err)
+
+! Change second last variable to change diffusivity
+CALL cmfe_Field_ComponentValuesInitialise(mBufMaterialsField,cmfe_FIELD_U_VARIABLE_TYPE, &
+& cmfe_FIELD_VALUES_SET_TYPE,1,0.030_CMISSRP,Err)
+CALL cmfe_Field_ComponentValuesInitialise(mBufMaterialsField,CMFE_FIELD_U_VARIABLE_TYPE,CMFE_FIELD_VALUES_SET_TYPE, &
+& 2,1.0_CMISSRP,Err) ! storage coefficient
+
+!CALL cmfe_Field_ParameterSetUpdateStart(mBufMaterialsField,cmfe_FIELD_U_VARIABLE_TYPE,cmfe_FIELD_VALUES_SET_TYPE,Err)
+!CALL cmfe_Field_ParameterSetUpdateFinish(mBufMaterialsField,cmfe_FIELD_U_VARIABLE_TYPE,cmfe_FIELD_VALUES_SET_TYPE,Err)
+
+!Set up source field for reaction diffusion equation set. Note that for the split problem subtype, the source field is not useall.
+CALL cmfe_Field_Initialise(mBufSourceField,Err)
+CALL cmfe_EquationsSet_SourceCreateStart(mBufEquationsSet,mBufSourceFieldUserNumber,mBufSourceField,Err)
+CALL cmfe_Field_VariableLabelSet(mBufSourceField,cmfe_FIELD_U_VARIABLE_TYPE,"mBuf Source Field",Err)
+!Finish the equations set source field variables
+CALL cmfe_EquationsSet_SourceCreateFinish(mBufEquationsSet,Err)
+CALL cmfe_Field_ComponentValuesInitialise(mBufSourceField,cmfe_FIELD_U_VARIABLE_TYPE, &
+& cmfe_FIELD_VALUES_SET_TYPE,1,0.0_CMISSDP,Err)  !Set the equations set to be a standard Diffusion no source problem
+!Finish creating the equations set
+
+!################( CamBuf )#############################################################--->
+
+!Create CamBuf  reaction diffusion with constant source equations_set
+CALL cmfe_EquationsSet_Initialise(CamBufEquationsSet,Err)
+CALL cmfe_Field_Initialise(CamBufEquationsSetField,Err)
+CALL cmfe_EquationsSet_CreateStart(CamBufEquationsSetUserNumber,Region,GeometricField,[CMFE_EQUATIONS_SET_CLASSICAL_FIELD_CLASS, &
+& CMFE_EQUATIONS_SET_REACTION_DIFFUSION_EQUATION_TYPE,CMFE_EQUATIONS_SET_CELLML_REAC_SPLIT_REAC_DIFF_SUBTYPE], &
+& CamBufEquationsSetFieldUserNumber,CamBufEquationsSetField,CamBufEquationsSet,Err)
+CALL cmfe_EquationsSet_CreateFinish(CamBufEquationsSet,Err)
+
+CALL cmfe_Field_Initialise(CamBufField,Err)
+CALL cmfe_EquationsSet_DependentCreateStart(CamBufEquationsSet,CamBufFieldUserNumber,CamBufField,Err)
+CALL cmfe_Field_VariableLabelSet(CamBufField,cmfe_FIELD_U_VARIABLE_TYPE,"CamBuf Field",Err)
+CALL cmfe_EquationsSet_DependentCreateFinish(CamBufEquationsSet,Err)
+
+CALL cmfe_Field_Initialise(CamBufMaterialsField,Err)
+CALL cmfe_EquationsSet_MaterialsCreateStart(CamBufEquationsSet,CamBufMaterialsFieldUserNumber,CamBufMaterialsField,Err)
+CALL cmfe_Field_VariableLabelSet(CamBufMaterialsField,CMFE_FIELD_U_VARIABLE_TYPE,"CamBuf Materials Field",Err)
+CALL cmfe_EquationsSet_MaterialsCreateFinish(CamBufEquationsSet,Err)
+
+! Change second last variable to change diffusivity
+CALL cmfe_Field_ComponentValuesInitialise(CamBufMaterialsField,cmfe_FIELD_U_VARIABLE_TYPE, &
+& cmfe_FIELD_VALUES_SET_TYPE,1,0.030_CMISSRP,Err)
+CALL cmfe_Field_ComponentValuesInitialise(CamBufMaterialsField,CMFE_FIELD_U_VARIABLE_TYPE,CMFE_FIELD_VALUES_SET_TYPE, &
+& 2,1.0_CMISSRP,Err) ! storage coefficient
+
+!CALL cmfe_Field_ParameterSetUpdateStart(CamBufMaterialsField,cmfe_FIELD_U_VARIABLE_TYPE,cmfe_FIELD_VALUES_SET_TYPE,Err)
+!CALL cmfe_Field_ParameterSetUpdateFinish(CamBufMaterialsField,cmfe_FIELD_U_VARIABLE_TYPE,cmfe_FIELD_VALUES_SET_TYPE,Err)
+
+!Set up source field for reaction diffusion equation set. Note that for the split problem subtype, the source field is not useall.
+CALL cmfe_Field_Initialise(CamBufSourceField,Err)
+CALL cmfe_EquationsSet_SourceCreateStart(CamBufEquationsSet,CamBufSourceFieldUserNumber,CamBufSourceField,Err)
+CALL cmfe_Field_VariableLabelSet(CamBufSourceField,cmfe_FIELD_U_VARIABLE_TYPE,"CamBuf Source Field",Err)
+!Finish the equations set source field variables
+CALL cmfe_EquationsSet_SourceCreateFinish(CamBufEquationsSet,Err)
+CALL cmfe_Field_ComponentValuesInitialise(CamBufSourceField,cmfe_FIELD_U_VARIABLE_TYPE, &
+& cmfe_FIELD_VALUES_SET_TYPE,1,0.0_CMISSDP,Err)  !Set the equations set to be a standard Diffusion no source problem
+!Finish creating the equations set
 
 
 !*******************************************************************************
 ! YOU CAN CHANGE THIS to change the diffusivity
 
   CALL cmfe_Field_ComponentValuesInitialise(MaterialsField,CMFE_FIELD_U_VARIABLE_TYPE,CMFE_FIELD_VALUES_SET_TYPE, &
-   & 1,0.5_CMISSRP,Err) !diff coeff in x
+   & 1,0.53_CMISSRP,Err) !diff coeff in x
+  ! Set diff at specific element i.e across nuclear envelope. nucpos
+    ! But the nuclear envelope is ~45nm thick. 
+    ! Currently, the nodes are spaced 500 nm apart.
+    ElemMap = 13.0_CMISSDP
+  CALL cmfe_Field_ParameterSetUpdateElement(MaterialsField,cmfe_FIELD_U_VARIABLE_TYPE,cmfe_FIELD_VALUES_SET_TYPE, &
+    & ElemMap,1,0.5_CMISSRP,Err)
+
+! Prevent nuclear buffer diffusion across the nuclear envelope
+  CALL cmfe_Field_ParameterSetUpdateElement(mBufMaterialsField,cmfe_FIELD_U_VARIABLE_TYPE,cmfe_FIELD_VALUES_SET_TYPE, &
+    & ElemMap,1,0.0_CMISSRP,Err)
+  CALL cmfe_Field_ParameterSetUpdateElement(CamBufMaterialsField,cmfe_FIELD_U_VARIABLE_TYPE,cmfe_FIELD_VALUES_SET_TYPE, &
+    & ElemMap,1,0.0_CMISSRP,Err)
+
+!0.00067
 !*******************************************************************************
   CALL cmfe_Field_ComponentValuesInitialise(MaterialsField,CMFE_FIELD_U_VARIABLE_TYPE,CMFE_FIELD_VALUES_SET_TYPE, &
    & 2,1.0_CMISSRP,Err) ! storage coefficient
 
+!!! Added stuff
+CALL cmfe_Field_Initialise(CompartmentTypeField,Err)
+CALL cmfe_Field_CreateStart(CompartmentTypeFieldUserNumber,Region,CompartmentTypeField,Err)
+CALL cmfe_Field_TypeSet(CompartmentTypeField,CMFE_FIELD_GENERAL_TYPE,Err)
+CALL cmfe_Field_MeshDecompositionSet(CompartmentTypeField,Decomposition,Err)
+CALL cmfe_Field_GeometricFieldSet(CompartmentTypeField,GeometricField,Err)
+CALL cmfe_Field_NumberOfVariablesSet(CompartmentTypeField,1,Err)
+CALL cmfe_Field_VariableTypesSet(CompartmentTypeField,[CMFE_FIELD_U_VARIABLE_TYPE],Err)
+CALL cmfe_Field_DataTypeSet(CompartmentTypeField,CMFE_FIELD_U_VARIABLE_TYPE,cmfe_FIELD_DP_TYPE,Err)
+CALL cmfe_Field_DimensionSet(CompartmentTypeField,CMFE_FIELD_U_VARIABLE_TYPE,CMFE_FIELD_SCALAR_DIMENSION_TYPE,Err)
+CALL cmfe_Field_NumberOfComponentsSet(CompartmentTypeField,CMFE_FIELD_U_VARIABLE_TYPE,1,Err)
+CALL cmfe_Field_VariableLabelSet(CompartmentTypeField,CMFE_FIELD_U_VARIABLE_TYPE,"CompartmentTypeField",Err)
+CALL cmfe_Field_ComponentMeshComponentGet(GeometricField,cmfe_FIELD_U_VARIABLE_TYPE, &
+& 1,GeometricMeshComponent,ERR)
+!Default to the geometric interpolation setup
+CALL cmfe_Field_ComponentMeshComponentSet(CompartmentTypeField,cmfe_FIELD_U_VARIABLE_TYPE,1, &
+& GeometricMeshComponent,ERR)
+!Specify the interpolation to be same as geometric interpolation
+CALL cmfe_Field_ComponentInterpolationSet(CompartmentTypeField,cmfe_FIELD_U_VARIABLE_TYPE,1, &
+& cmfe_FIELD_NODE_BASED_INTERPOLATION,ERR)
 
-!!!! Added stuff
-!
-!CALL cmfe_Field_ComponentValuesInitialise(TRPNMaterialsField,CMFE_FIELD_U_VARIABLE_TYPE,CMFE_FIELD_VALUES_SET_TYPE, &
-!& 1,0.5_CMISSRP,Err) !diff coeff in x
-!!*******************************************************************************
-!CALL cmfe_Field_ComponentValuesInitialise(TRPNMaterialsField,CMFE_FIELD_U_VARIABLE_TYPE,CMFE_FIELD_VALUES_SET_TYPE, &
-!& 2,1.0_CMISSRP,Err) ! storage coefficient
-!
-!CALL cmfe_Field_ComponentValuesInitialise(CaSRMaterialsField,CMFE_FIELD_U_VARIABLE_TYPE,CMFE_FIELD_VALUES_SET_TYPE, &
-!& 1,0.5_CMISSRP,Err) !diff coeff in x
-!!*******************************************************************************
-!CALL cmfe_Field_ComponentValuesInitialise(CaSRMaterialsField,CMFE_FIELD_U_VARIABLE_TYPE,CMFE_FIELD_VALUES_SET_TYPE, &
-!& 2,1.0_CMISSRP,Err) ! storage coefficient
-!
-!CALL cmfe_Field_ComponentValuesInitialise(ZOneMaterialsField,CMFE_FIELD_U_VARIABLE_TYPE,CMFE_FIELD_VALUES_SET_TYPE, &
-!& 1,0.5_CMISSRP,Err) !diff coeff in x
-!!*******************************************************************************
-!CALL cmfe_Field_ComponentValuesInitialise(ZOneMaterialsField,CMFE_FIELD_U_VARIABLE_TYPE,CMFE_FIELD_VALUES_SET_TYPE, &
-!& 2,1.0_CMISSRP,Err) ! storage coefficient
-!
-!CALL cmfe_Field_ComponentValuesInitialise(ZTwoMaterialsField,CMFE_FIELD_U_VARIABLE_TYPE,CMFE_FIELD_VALUES_SET_TYPE, &
-!& 1,0.5_CMISSRP,Err) !diff coeff in x
-!!*******************************************************************************
-!CALL cmfe_Field_ComponentValuesInitialise(ZTwoMaterialsField,CMFE_FIELD_U_VARIABLE_TYPE,CMFE_FIELD_VALUES_SET_TYPE, &
-!& 2,1.0_CMISSRP,Err) ! storage coefficient
-!
-!CALL cmfe_Field_ComponentValuesInitialise(ZThreeMaterialsField,CMFE_FIELD_U_VARIABLE_TYPE,CMFE_FIELD_VALUES_SET_TYPE, &
-!& 1,0.5_CMISSRP,Err) !diff coeff in x
-!!*******************************************************************************
-!CALL cmfe_Field_ComponentValuesInitialise(ZThreeMaterialsField,CMFE_FIELD_U_VARIABLE_TYPE,CMFE_FIELD_VALUES_SET_TYPE, &
-!& 2,1.0_CMISSRP,Err) ! storage coefficient
-
-
-!CALL cmfe_Field_Initialise(CompartmentTypeField,Err)
-!CALL cmfe_Field_CreateStart(CompartmentTypeFieldUserNumber,Region,CompartmentTypeField,Err)
-!CALL cmfe_Field_TypeSet(CompartmentTypeField,CMFE_FIELD_GENERAL_TYPE,Err)
-!CALL cmfe_Field_MeshDecompositionSet(CompartmentTypeField,Decomposition,Err)
-!CALL cmfe_Field_GeometricFieldSet(CompartmentTypeField,GeometricField,Err)
-!CALL cmfe_Field_NumberOfVariablesSet(CompartmentTypeField,1,Err)
-!CALL cmfe_Field_VariableTypesSet(CompartmentTypeField,[CMFE_FIELD_U_VARIABLE_TYPE],Err)
-!CALL cmfe_Field_DataTypeSet(CompartmentTypeField,CMFE_FIELD_U_VARIABLE_TYPE,cmfe_FIELD_DP_TYPE,Err)
-!CALL cmfe_Field_DimensionSet(CompartmentTypeField,CMFE_FIELD_U_VARIABLE_TYPE,CMFE_FIELD_SCALAR_DIMENSION_TYPE,Err)
-!CALL cmfe_Field_NumberOfComponentsSet(CompartmentTypeField,CMFE_FIELD_U_VARIABLE_TYPE,1,Err)
-!CALL cmfe_Field_VariableLabelSet(CompartmentTypeField,CMFE_FIELD_U_VARIABLE_TYPE,"CompartmentTypeField",Err)
-!CALL cmfe_Field_ComponentMeshComponentGet(GeometricField,cmfe_FIELD_U_VARIABLE_TYPE, &
-!& 1,GeometricMeshComponent,ERR)
-!!Default to the geometric interpolation setup
-!CALL cmfe_Field_ComponentMeshComponentSet(CompartmentTypeField,cmfe_FIELD_U_VARIABLE_TYPE,1, &
-!& GeometricMeshComponent,ERR)
-!!Specify the interpolation to be same as geometric interpolation
-!CALL cmfe_Field_ComponentInterpolationSet(CompartmentTypeField,cmfe_FIELD_U_VARIABLE_TYPE,1, &
-!& cmfe_FIELD_NODE_BASED_INTERPOLATION,ERR)
-!
-!CALL cmfe_Field_CreateFinish(CompartmentTypeField,Err)
-!!Set all nodes to have value 0
-!CALL cmfe_Field_ComponentValuesInitialise(CompartmentTypeField,cmfe_FIELD_U_VARIABLE_TYPE, &
-!  & cmfe_FIELD_VALUES_SET_TYPE,1,0.0_CMISSDP,Err)
+CALL cmfe_Field_CreateFinish(CompartmentTypeField,Err)
+!Set all nodes to have value 1
+CALL cmfe_Field_ComponentValuesInitialise(CompartmentTypeField,cmfe_FIELD_U_VARIABLE_TYPE, &
+  & cmfe_FIELD_VALUES_SET_TYPE,1,1.0_CMISSDP,Err)
 
   !Set up source field for reaction diffusion equation set. Note that for the split problem subtype, the source field is not used at all.
   CALL cmfe_Field_Initialise(SourceField,Err)
@@ -507,77 +521,31 @@ TYPE(cmfe_EquationsType) :: TRPNEquations, CaSREquations,ZOneEquations, ZTwoEqua
   CALL cmfe_EquationsSet_SourceCreateFinish(EquationsSet,Err)
   CALL cmfe_Field_ComponentValuesInitialise(SourceField,CMFE_FIELD_U_VARIABLE_TYPE, &
     & CMFE_FIELD_VALUES_SET_TYPE,1,0.0_CMISSRP,Err)
-!
-!!!! Added Stuff
-!!Set up source field for reaction diffusion equation set. Note that for the split problem subtype, the source field is not used at all.
-!CALL cmfe_Field_Initialise(TRPNSourceField,Err)
-!CALL cmfe_EquationsSet_SourceCreateStart(TRPNEquationsSet,TRPNSourceFieldUserNumber,TRPNSourceField,Err)
-!CALL cmfe_Field_VariableLabelSet(TRPNSourceField,CMFE_FIELD_U_VARIABLE_TYPE," TRPN Source Field",Err)
-!!Finish the equations set source field variables
-!CALL cmfe_EquationsSet_SourceCreateFinish(TRPNEquationsSet,Err)
-!CALL cmfe_Field_ComponentValuesInitialise(TRPNSourceField,CMFE_FIELD_U_VARIABLE_TYPE, &
-!& CMFE_FIELD_VALUES_SET_TYPE,1,0.0_CMISSRP,Err)
-!
-!!Set up source field for reaction diffusion equation set. Note that for the split problem subtype, the source field is not used at all.
-!CALL cmfe_Field_Initialise(CaSRSourceField,Err)
-!CALL cmfe_EquationsSet_SourceCreateStart(CaSREquationsSet,CaSRSourceFieldUserNumber,CaSRSourceField,Err)
-!CALL cmfe_Field_VariableLabelSet(CaSRSourceField,CMFE_FIELD_U_VARIABLE_TYPE," CaSR Source Field",Err)
-!!Finish the equations set source field variables
-!CALL cmfe_EquationsSet_SourceCreateFinish(CaSREquationsSet,Err)
-!CALL cmfe_Field_ComponentValuesInitialise(CaSRSourceField,CMFE_FIELD_U_VARIABLE_TYPE, &
-!& CMFE_FIELD_VALUES_SET_TYPE,1,0.0_CMISSRP,Err)
-!
-!!Set up source field for reaction diffusion equation set. Note that for the split problem subtype, the source field is not used at all.
-!CALL cmfe_Field_Initialise(ZOneSourceField,Err)
-!CALL cmfe_EquationsSet_SourceCreateStart(ZOneEquationsSet,ZOneSourceFieldUserNumber,ZOneSourceField,Err)
-!CALL cmfe_Field_VariableLabelSet(ZOneSourceField,CMFE_FIELD_U_VARIABLE_TYPE," ZOne Source Field",Err)
-!!Finish the equations set source field variables
-!CALL cmfe_EquationsSet_SourceCreateFinish(ZOneEquationsSet,Err)
-!CALL cmfe_Field_ComponentValuesInitialise(ZOneSourceField,CMFE_FIELD_U_VARIABLE_TYPE, &
-!& CMFE_FIELD_VALUES_SET_TYPE,1,0.0_CMISSRP,Err)
-!
-!!Set up source field for reaction diffusion equation set. Note that for the split problem subtype, the source field is not used at all.
-!CALL cmfe_Field_Initialise(ZTwoSourceField,Err)
-!CALL cmfe_EquationsSet_SourceCreateStart(ZTwoEquationsSet,ZTwoSourceFieldUserNumber,ZTwoSourceField,Err)
-!CALL cmfe_Field_VariableLabelSet(ZTwoSourceField,CMFE_FIELD_U_VARIABLE_TYPE," ZTwo Source Field",Err)
-!!Finish the equations set source field variables
-!CALL cmfe_EquationsSet_SourceCreateFinish(ZTwoEquationsSet,Err)
-!CALL cmfe_Field_ComponentValuesInitialise(ZTwoSourceField,CMFE_FIELD_U_VARIABLE_TYPE, &
-!& CMFE_FIELD_VALUES_SET_TYPE,1,0.0_CMISSRP,Err)
-!
-!!Set up source field for reaction diffusion equation set. Note that for the split problem subtype, the source field is not used at all.
-!CALL cmfe_Field_Initialise(ZThreeSourceField,Err)
-!CALL cmfe_EquationsSet_SourceCreateStart(ZThreeEquationsSet,ZThreeSourceFieldUserNumber,ZThreeSourceField,Err)
-!CALL cmfe_Field_VariableLabelSet(ZThreeSourceField,CMFE_FIELD_U_VARIABLE_TYPE," ZThree Source Field",Err)
-!!Finish the equations set source field variables
-!CALL cmfe_EquationsSet_SourceCreateFinish(ZThreeEquationsSet,Err)
-!CALL cmfe_Field_ComponentValuesInitialise(ZThreeSourceField,CMFE_FIELD_U_VARIABLE_TYPE, &
-!& CMFE_FIELD_VALUES_SET_TYPE,1,0.0_CMISSRP,Err)
 
-CALL cmfe_Field_Initialise(NaiSourceField,Err)
-CALL cmfe_Field_CreateStart(NaiSourceFieldUserNumber,Region,NaiSourceField,Err)
-CALL cmfe_Field_TypeSet(NaiSourceField,CMFE_FIELD_GENERAL_TYPE,Err)
-CALL cmfe_Field_MeshDecompositionSet(NaiSourceField,Decomposition,Err)
-CALL cmfe_Field_GeometricFieldSet(NaiSourceField,GeometricField,Err)
-CALL cmfe_Field_NumberOfVariablesSet(NaiSourceField,1,Err)
-CALL cmfe_Field_VariableTypesSet(NaiSourceField,[CMFE_FIELD_U_VARIABLE_TYPE],Err)
-CALL cmfe_Field_DataTypeSet(NaiSourceField,CMFE_FIELD_U_VARIABLE_TYPE,cmfe_FIELD_DP_TYPE,Err)
-CALL cmfe_Field_DimensionSet(NaiSourceField,CMFE_FIELD_U_VARIABLE_TYPE,CMFE_FIELD_SCALAR_DIMENSION_TYPE,Err)
-CALL cmfe_Field_NumberOfComponentsSet(NaiSourceField,CMFE_FIELD_U_VARIABLE_TYPE,1,Err)
-CALL cmfe_Field_VariableLabelSet(NaiSourceField,CMFE_FIELD_U_VARIABLE_TYPE,"NaiField",Err)
-CALL cmfe_Field_ComponentMeshComponentGet(GeometricField,cmfe_FIELD_U_VARIABLE_TYPE, &
-& 1,GeometricMeshComponent,ERR)
-!Default to the geometric interpolation setup
-CALL cmfe_Field_ComponentMeshComponentSet(NaiSourceField,cmfe_FIELD_U_VARIABLE_TYPE,1, &
-& GeometricMeshComponent,ERR)
-!Specify the interpolation to be same as geometric interpolation
-CALL cmfe_Field_ComponentInterpolationSet(NaiSourceField,cmfe_FIELD_U_VARIABLE_TYPE,1, &
-& cmfe_FIELD_NODE_BASED_INTERPOLATION,ERR)
-
-CALL cmfe_Field_CreateFinish(NaiSourceField,Err)
-!Set all nodes to have value 0
-CALL cmfe_Field_ComponentValuesInitialise(NaiSourceField,cmfe_FIELD_U_VARIABLE_TYPE, &
-  & cmfe_FIELD_VALUES_SET_TYPE,1,10.0_CMISSDP,Err)
+!CALL cmfe_Field_Initialise(NaiSourceField,Err)
+!CALL cmfe_Field_CreateStart(NaiSourceFieldUserNumber,Region,NaiSourceField,Err)
+!CALL cmfe_Field_TypeSet(NaiSourceField,CMFE_FIELD_GENERAL_TYPE,Err)
+!CALL cmfe_Field_MeshDecompositionSet(NaiSourceField,Decomposition,Err)
+!CALL cmfe_Field_GeometricFieldSet(NaiSourceField,GeometricField,Err)
+!CALL cmfe_Field_NumberOfVariablesSet(NaiSourceField,1,Err)
+!CALL cmfe_Field_VariableTypesSet(NaiSourceField,[CMFE_FIELD_U_VARIABLE_TYPE],Err)
+!CALL cmfe_Field_DataTypeSet(NaiSourceField,CMFE_FIELD_U_VARIABLE_TYPE,cmfe_FIELD_DP_TYPE,Err)
+!CALL cmfe_Field_DimensionSet(NaiSourceField,CMFE_FIELD_U_VARIABLE_TYPE,CMFE_FIELD_SCALAR_DIMENSION_TYPE,Err)
+!CALL cmfe_Field_NumberOfComponentsSet(NaiSourceField,CMFE_FIELD_U_VARIABLE_TYPE,1,Err)
+!CALL cmfe_Field_VariableLabelSet(NaiSourceField,CMFE_FIELD_U_VARIABLE_TYPE,"NaiField",Err)
+!CALL cmfe_Field_ComponentMeshComponentGet(GeometricField,cmfe_FIELD_U_VARIABLE_TYPE, &
+!& 1,GeometricMeshComponent,ERR)
+!!Default to the geometric interpolation setup
+!CALL cmfe_Field_ComponentMeshComponentSet(NaiSourceField,cmfe_FIELD_U_VARIABLE_TYPE,1, &
+!& GeometricMeshComponent,ERR)
+!!Specify the interpolation to be same as geometric interpolation
+!CALL cmfe_Field_ComponentInterpolationSet(NaiSourceField,cmfe_FIELD_U_VARIABLE_TYPE,1, &
+!& cmfe_FIELD_NODE_BASED_INTERPOLATION,ERR)
+!
+!CALL cmfe_Field_CreateFinish(NaiSourceField,Err)
+!!Set all nodes to have value 10
+!CALL cmfe_Field_ComponentValuesInitialise(NaiSourceField,cmfe_FIELD_U_VARIABLE_TYPE, &
+!  & cmfe_FIELD_VALUES_SET_TYPE,1,10.0_CMISSDP,Err)
 
   !Start to set up CellML Fields
 
@@ -585,20 +553,17 @@ CALL cmfe_Field_ComponentValuesInitialise(NaiSourceField,cmfe_FIELD_U_VARIABLE_T
   CALL cmfe_CellML_Initialise(CellML,Err)
   CALL cmfe_CellML_CreateStart(CellMLUserNumber,Region,CellML,Err)
   !Import a toy constant source model from a file
-  CALL cmfe_CellML_ModelImport(CellML,"Hinch.cellml",constantModelIndex,Err)
+  CALL cmfe_CellML_ModelImport(CellML,"HinchBuf.cellml",constantModelIndex,Err)
 
   ! Now we have imported all the models we are able to specify which variables from the model we want:
   !   - to set from this side
   !These are effectively parameters that you know won't change in the course of the ode solving for one time step. i.e. fixed before running cellml, known in opencmiss and 
   !changed only in opencmiss - components of the parameters field
-  CALL cmfe_CellML_VariableSetAsKnown(CellML,constantModelIndex,"intracell/Na_i",Err)
+!  CALL cmfe_CellML_VariableSetAsKnown(CellML,constantModelIndex,"intracell/Na_i",Err)
+  CALL cmfe_CellML_VariableSetAsKnown(CellML,constantModelIndex,"cellGeo/compartmentType",Err)
 
   !   - to get from the CellML side. variables in cellml model that are not state variables, but are dependent on independent and state variables. - components of intermediate field
-  !CALL cmfe_CellML_VariableSetAsWanted(CellML,constantModelIndex,"intracell/TRPN",Err)
-  !CALL cmfe_CellML_VariableSetAsWanted(CellML,constantModelIndex,"intracell/Ca_SR",Err)
-!  CALL cmfe_CellML_VariableSetAsWanted(CellML,constantModelIndex,"CaRU_red_stat/z_one",Err)
-!  CALL cmfe_CellML_VariableSetAsWanted(CellML,constantModelIndex,"CaRU_red_stat/z_two",Err)
-!  CALL cmfe_CellML_VariableSetAsWanted(CellML,constantModelIndex,"CaRU_red_stat/z_thr",Err)
+!  CALL cmfe_CellML_VariableSetAsWanted(CellML,constantModelIndex,"fluer/CFluo",Err)
 
   !Finish the CellML environment
   CALL cmfe_CellML_CreateFinish(CellML,Err)
@@ -622,47 +587,37 @@ CALL cmfe_Field_ComponentValuesInitialise(NaiSourceField,cmfe_FIELD_U_VARIABLE_T
   CALL cmfe_CellML_CreateCellMLToFieldMap(CellML,constantModelIndex,"intracell/Ca_i",CMFE_FIELD_VALUES_SET_TYPE, &
     & DependentField,CMFE_FIELD_U_VARIABLE_TYPE,1,CMFE_FIELD_VALUES_SET_TYPE,Err)
 
-  CALL cmfe_CellML_CreateFieldToCellMLMap(CellML,NaiSourceField,CMFE_FIELD_U_VARIABLE_TYPE,1,CMFE_FIELD_VALUES_SET_TYPE, &
-    & constantModelIndex,"intracell/Na_i",CMFE_FIELD_VALUES_SET_TYPE,Err)
-  CALL cmfe_CellML_CreateCellMLToFieldMap(CellML,constantModelIndex,"intracell/Na_i",CMFE_FIELD_VALUES_SET_TYPE, &
-    & NaiSourceField,CMFE_FIELD_U_VARIABLE_TYPE,1,CMFE_FIELD_VALUES_SET_TYPE,Err)
+! Add buffer maps
+CALL cmfe_CellML_CreateFieldToCellMLMap(CellML,FluoField,cmfe_FIELD_U_VARIABLE_TYPE,1,cmfe_FIELD_VALUES_SET_TYPE, &
+& constantModelIndex,"intracell/Fluo",cmfe_FIELD_VALUES_SET_TYPE,Err)
+CALL cmfe_CellML_CreateCellMLToFieldMap(CellML,constantModelIndex,"intracell/Fluo",cmfe_FIELD_VALUES_SET_TYPE, &
+& FluoField,cmfe_FIELD_U_VARIABLE_TYPE,1,cmfe_FIELD_VALUES_SET_TYPE,Err)
 
-!!! Added stuff
-! Map the wanted variables to fields
-!CALL cmfe_CellML_CreateFieldToCellMLMap(CellML,DependentField,CMFE_FIELD_U_VARIABLE_TYPE,1,CMFE_FIELD_VALUES_SET_TYPE, &
-!& constantModelIndex,"CaRU_red_stat/z_one",CMFE_FIELD_VALUES_SET_TYPE,Err)
+CALL cmfe_CellML_CreateFieldToCellMLMap(CellML,CaFluoField,cmfe_FIELD_U_VARIABLE_TYPE,1,cmfe_FIELD_VALUES_SET_TYPE, &
+& constantModelIndex,"intracell/CaFluo",cmfe_FIELD_VALUES_SET_TYPE,Err)
+CALL cmfe_CellML_CreateCellMLToFieldMap(CellML,constantModelIndex,"intracell/CaFluo",cmfe_FIELD_VALUES_SET_TYPE, &
+& CaFluoField,cmfe_FIELD_U_VARIABLE_TYPE,1,cmfe_FIELD_VALUES_SET_TYPE,Err)
 
-!
-!CALL cmfe_CellML_CreateFieldToCellMLMap(CellML,TRPNField,CMFE_FIELD_U_VARIABLE_TYPE,1,CMFE_FIELD_VALUES_SET_TYPE, &
-!& constantModelIndex,"intracell/TRPN",CMFE_FIELD_VALUES_SET_TYPE,Err)
-!CALL cmfe_CellML_CreateCellMLToFieldMap(CellML,constantModelIndex,"intracell/TRPN",CMFE_FIELD_VALUES_SET_TYPE, &
-!& TRPNField,CMFE_FIELD_U_VARIABLE_TYPE,1,CMFE_FIELD_VALUES_SET_TYPE,Err)
-!
-!CALL cmfe_CellML_CreateFieldToCellMLMap(CellML,CaSRField,CMFE_FIELD_U_VARIABLE_TYPE,1,CMFE_FIELD_VALUES_SET_TYPE, &
-!& constantModelIndex,"intracell/Ca_SR",CMFE_FIELD_VALUES_SET_TYPE,Err)
-!CALL cmfe_CellML_CreateCellMLToFieldMap(CellML,constantModelIndex,"intracell/Ca_SR",CMFE_FIELD_VALUES_SET_TYPE, &
-!& CaSRField,CMFE_FIELD_U_VARIABLE_TYPE,1,CMFE_FIELD_VALUES_SET_TYPE,Err)
-!
-!CALL cmfe_CellML_CreateFieldToCellMLMap(CellML,ZOneField,CMFE_FIELD_U_VARIABLE_TYPE,1,CMFE_FIELD_VALUES_SET_TYPE, &
-!& constantModelIndex,"CaRU_red_stat/z_one",CMFE_FIELD_VALUES_SET_TYPE,Err)
-!CALL cmfe_CellML_CreateCellMLToFieldMap(CellML,constantModelIndex,"CaRU_red_stat/z_one",CMFE_FIELD_VALUES_SET_TYPE, &
-!& ZOneField,CMFE_FIELD_U_VARIABLE_TYPE,1,CMFE_FIELD_VALUES_SET_TYPE,Err)
-!
-!CALL cmfe_CellML_CreateFieldToCellMLMap(CellML,ZTwoField,CMFE_FIELD_U_VARIABLE_TYPE,1,CMFE_FIELD_VALUES_SET_TYPE, &
-!& constantModelIndex,"CaRU_red_stat/z_two",CMFE_FIELD_VALUES_SET_TYPE,Err)
-!CALL cmfe_CellML_CreateCellMLToFieldMap(CellML,constantModelIndex,"CaRU_red_stat/z_two",CMFE_FIELD_VALUES_SET_TYPE, &
-!& ZTwoField,CMFE_FIELD_U_VARIABLE_TYPE,1,CMFE_FIELD_VALUES_SET_TYPE,Err)
-!
-!CALL cmfe_CellML_CreateFieldToCellMLMap(CellML,ZThreeField,CMFE_FIELD_U_VARIABLE_TYPE,1,CMFE_FIELD_VALUES_SET_TYPE, &
-!& constantModelIndex,"CaRU_red_stat/z_thr",CMFE_FIELD_VALUES_SET_TYPE,Err)
-!CALL cmfe_CellML_CreateCellMLToFieldMap(CellML,constantModelIndex,"CaRU_red_stat/z_thr",CMFE_FIELD_VALUES_SET_TYPE, &
-!& ZThreeField,CMFE_FIELD_U_VARIABLE_TYPE,1,CMFE_FIELD_VALUES_SET_TYPE,Err)
+CALL cmfe_CellML_CreateFieldToCellMLMap(CellML,mBufField,cmfe_FIELD_U_VARIABLE_TYPE,1,cmfe_FIELD_VALUES_SET_TYPE, &
+& constantModelIndex,"intracell/B_nucm",cmfe_FIELD_VALUES_SET_TYPE,Err)
+CALL cmfe_CellML_CreateCellMLToFieldMap(CellML,constantModelIndex,"intracell/B_nucm",cmfe_FIELD_VALUES_SET_TYPE, &
+& mBufField,cmfe_FIELD_U_VARIABLE_TYPE,1,cmfe_FIELD_VALUES_SET_TYPE,Err)
+
+CALL cmfe_CellML_CreateFieldToCellMLMap(CellML,CamBufField,cmfe_FIELD_U_VARIABLE_TYPE,1,cmfe_FIELD_VALUES_SET_TYPE, &
+& constantModelIndex,"intracell/CaB_nucm",cmfe_FIELD_VALUES_SET_TYPE,Err)
+CALL cmfe_CellML_CreateCellMLToFieldMap(CellML,constantModelIndex,"intracell/CaB_nucm",cmfe_FIELD_VALUES_SET_TYPE, &
+& CamBufField,cmfe_FIELD_U_VARIABLE_TYPE,1,cmfe_FIELD_VALUES_SET_TYPE,Err)
+
+!  CALL cmfe_CellML_CreateFieldToCellMLMap(CellML,NaiSourceField,CMFE_FIELD_U_VARIABLE_TYPE,1,CMFE_FIELD_VALUES_SET_TYPE, &
+!    & constantModelIndex,"intracell/Na_i",CMFE_FIELD_VALUES_SET_TYPE,Err)
+!  CALL cmfe_CellML_CreateCellMLToFieldMap(CellML,constantModelIndex,"intracell/Na_i",CMFE_FIELD_VALUES_SET_TYPE, &
+!    & NaiSourceField,CMFE_FIELD_U_VARIABLE_TYPE,1,CMFE_FIELD_VALUES_SET_TYPE,Err)
 
 !  !!! Added stuff
-!  CALL cmfe_CellML_CreateFieldToCellMLMap(CellML,CompartmentTypeField,CMFE_FIELD_U_VARIABLE_TYPE,1,CMFE_FIELD_VALUES_SET_TYPE, &
-!    & constantModelIndex,"dude/compartmentType",CMFE_FIELD_VALUES_SET_TYPE,Err)
-!  CALL cmfe_CellML_CreateCellMLToFieldMap(CellML,constantModelIndex,"dude/compartmentType",CMFE_FIELD_VALUES_SET_TYPE, &
-!    & CompartmentTypeField,CMFE_FIELD_U_VARIABLE_TYPE,1,CMFE_FIELD_VALUES_SET_TYPE,Err)
+  CALL cmfe_CellML_CreateFieldToCellMLMap(CellML,CompartmentTypeField,CMFE_FIELD_U_VARIABLE_TYPE,1,CMFE_FIELD_VALUES_SET_TYPE, &
+    & constantModelIndex,"cellGeo/compartmentType",CMFE_FIELD_VALUES_SET_TYPE,Err)
+  CALL cmfe_CellML_CreateCellMLToFieldMap(CellML,constantModelIndex,"cellGeo/compartmentType",CMFE_FIELD_VALUES_SET_TYPE, &
+    & CompartmentTypeField,CMFE_FIELD_U_VARIABLE_TYPE,1,CMFE_FIELD_VALUES_SET_TYPE,Err)
 
   !Finish the creation of CellML <--> OpenCMISS field maps
   CALL cmfe_CellML_FieldMapsCreateFinish(CellML,Err)
@@ -675,24 +630,16 @@ CALL cmfe_Field_ComponentValuesInitialise(NaiSourceField,cmfe_FIELD_U_VARIABLE_T
 
   CALL cmfe_Field_ComponentValuesInitialise(DependentField,CMFE_FIELD_U_VARIABLE_TYPE, &
     & CMFE_FIELD_VALUES_SET_TYPE,1,0.0001_CMISSRP,Err)
-!  node=2
-!  CALL cmfe_Decomposition_NodeDomainGet(Decomposition,node,1,NodeDomain,Err)
-!  IF(NodeDomain==ComputationalNodeNumber) THEN
-!    CALL cmfe_Field_ParameterSetUpdateNode(DependentField,CMFE_FIELD_U_VARIABLE_TYPE, &
-!     & CMFE_FIELD_VALUES_SET_TYPE, &
-!     & 1,1,node,1,0.0001_CMISSRP,Err)
-!CALL cmfe_Field_ComponentValuesInitialise(TRPNField,CMFE_FIELD_U_VARIABLE_TYPE, &
-!& CMFE_FIELD_VALUES_SET_TYPE,1,0.0636364_CMISSRP,Err)
-!CALL cmfe_Field_ComponentValuesInitialise(CaSRField,CMFE_FIELD_U_VARIABLE_TYPE, &
-!& CMFE_FIELD_VALUES_SET_TYPE,1,0.7_CMISSRP,Err)
-!CALL cmfe_Field_ComponentValuesInitialise(ZOneField,CMFE_FIELD_U_VARIABLE_TYPE, &
-!& CMFE_FIELD_VALUES_SET_TYPE,1,0.98859_CMISSRP,Err)
-!CALL cmfe_Field_ComponentValuesInitialise(ZTwoField,CMFE_FIELD_U_VARIABLE_TYPE, &
-!& CMFE_FIELD_VALUES_SET_TYPE,1,0.0087302_CMISSRP,Err)
-!CALL cmfe_Field_ComponentValuesInitialise(ZThreeField,CMFE_FIELD_U_VARIABLE_TYPE, &
-!& CMFE_FIELD_VALUES_SET_TYPE,1,0.0026566_CMISSRP,Err)
-!  ENDIF
 
+! Set initial values of buffers
+CALL cmfe_Field_ComponentValuesInitialise(FluoField,cmfe_FIELD_U_VARIABLE_TYPE, &
+& cmfe_FIELD_VALUES_SET_TYPE,1,0.002_CMISSRP,Err)
+CALL cmfe_Field_ComponentValuesInitialise(CaFluoField,cmfe_FIELD_U_VARIABLE_TYPE, &
+& cmfe_FIELD_VALUES_SET_TYPE,1,0.0_CMISSRP,Err)
+CALL cmfe_Field_ComponentValuesInitialise(mBufField,cmfe_FIELD_U_VARIABLE_TYPE, &
+& cmfe_FIELD_VALUES_SET_TYPE,1,0.0_CMISSRP,Err)
+CALL cmfe_Field_ComponentValuesInitialise(CamBufField,cmfe_FIELD_U_VARIABLE_TYPE, &
+& cmfe_FIELD_VALUES_SET_TYPE,1,0.0_CMISSRP,Err)
 
 
 !*******************************************************************************
@@ -756,41 +703,34 @@ CALL cmfe_Field_ComponentValuesInitialise(NaiSourceField,cmfe_FIELD_U_VARIABLE_T
   !Finish the equations set equations
   CALL cmfe_EquationsSet_EquationsCreateFinish(EquationsSet,Err)
 
-!!!! Added Stuff
-!!Create the equations set equations for TRPN
-!CALL cmfe_Equations_Initialise(TRPNEquations,Err)
-!CALL cmfe_EquationsSet_EquationsCreateStart(TRPNEquationsSet,TRPNEquations,Err)
-!CALL cmfe_Equations_SparsityTypeSet(TRPNEquations,cmfe_EQUATIONS_SPARSE_MATRICES,Err)
-!CALL cmfe_Equations_OutputTypeSet(TRPNEquations,cmfe_EQUATIONS_NO_OUTPUT,Err)
-!CALL cmfe_EquationsSet_EquationsCreateFinish(TRPNEquationsSet,Err)
-!
-!!Create the equations set equations for CaSR
-!CALL cmfe_Equations_Initialise(CaSREquations,Err)
-!CALL cmfe_EquationsSet_EquationsCreateStart(CaSREquationsSet,CaSREquations,Err)
-!CALL cmfe_Equations_SparsityTypeSet(CaSREquations,cmfe_EQUATIONS_SPARSE_MATRICES,Err)
-!CALL cmfe_Equations_OutputTypeSet(CaSREquations,cmfe_EQUATIONS_NO_OUTPUT,Err)
-!CALL cmfe_EquationsSet_EquationsCreateFinish(CaSREquationsSet,Err)
-!
-!!Create the equations set equations for ZOne
-!CALL cmfe_Equations_Initialise(ZOneEquations,Err)
-!CALL cmfe_EquationsSet_EquationsCreateStart(ZOneEquationsSet,ZOneEquations,Err)
-!CALL cmfe_Equations_SparsityTypeSet(ZOneEquations,cmfe_EQUATIONS_SPARSE_MATRICES,Err)
-!CALL cmfe_Equations_OutputTypeSet(ZOneEquations,cmfe_EQUATIONS_NO_OUTPUT,Err)
-!CALL cmfe_EquationsSet_EquationsCreateFinish(ZOneEquationsSet,Err)
-!
-!!Create the equations set equations for ZTwo
-!CALL cmfe_Equations_Initialise(ZTwoEquations,Err)
-!CALL cmfe_EquationsSet_EquationsCreateStart(ZTwoEquationsSet,ZTwoEquations,Err)
-!CALL cmfe_Equations_SparsityTypeSet(ZTwoEquations,cmfe_EQUATIONS_SPARSE_MATRICES,Err)
-!CALL cmfe_Equations_OutputTypeSet(ZTwoEquations,cmfe_EQUATIONS_NO_OUTPUT,Err)
-!CALL cmfe_EquationsSet_EquationsCreateFinish(ZTwoEquationsSet,Err)
-!
-!!Create the equations set equations for ZThree
-!CALL cmfe_Equations_Initialise(ZThreeEquations,Err)
-!CALL cmfe_EquationsSet_EquationsCreateStart(ZThreeEquationsSet,ZThreeEquations,Err)
-!CALL cmfe_Equations_SparsityTypeSet(ZThreeEquations,cmfe_EQUATIONS_SPARSE_MATRICES,Err)
-!CALL cmfe_Equations_OutputTypeSet(ZThreeEquations,cmfe_EQUATIONS_NO_OUTPUT,Err)
-!CALL cmfe_EquationsSet_EquationsCreateFinish(ZThreeEquationsSet,Err)
+!!!! Buffer Equations
+!Create the equations set equations for Fluo
+CALL cmfe_Equations_Initialise(FluoEquations,Err)
+CALL cmfe_EquationsSet_EquationsCreateStart(FluoEquationsSet,FluoEquations,Err)
+CALL cmfe_Equations_SparsityTypeSet(FluoEquations,cmfe_EQUATIONS_SPARSE_MATRICES,Err)
+CALL cmfe_Equations_OutputTypeSet(FluoEquations,cmfe_EQUATIONS_NO_OUTPUT,Err)
+CALL cmfe_EquationsSet_EquationsCreateFinish(FluoEquationsSet,Err)
+
+!Create the equations set equations for CaFluo
+CALL cmfe_Equations_Initialise(CaFluoEquations,Err)
+CALL cmfe_EquationsSet_EquationsCreateStart(CaFluoEquationsSet,CaFluoEquations,Err)
+CALL cmfe_Equations_SparsityTypeSet(CaFluoEquations,cmfe_EQUATIONS_SPARSE_MATRICES,Err)
+CALL cmfe_Equations_OutputTypeSet(CaFluoEquations,cmfe_EQUATIONS_NO_OUTPUT,Err)
+CALL cmfe_EquationsSet_EquationsCreateFinish(CaFluoEquationsSet,Err)
+
+!Create the equations set equations for mBuf
+CALL cmfe_Equations_Initialise(mBufEquations,Err)
+CALL cmfe_EquationsSet_EquationsCreateStart(mBufEquationsSet,mBufEquations,Err)
+CALL cmfe_Equations_SparsityTypeSet(mBufEquations,cmfe_EQUATIONS_SPARSE_MATRICES,Err)
+CALL cmfe_Equations_OutputTypeSet(mBufEquations,cmfe_EQUATIONS_NO_OUTPUT,Err)
+CALL cmfe_EquationsSet_EquationsCreateFinish(mBufEquationsSet,Err)
+
+!Create the equations set equations for CamBuf
+CALL cmfe_Equations_Initialise(CamBufEquations,Err)
+CALL cmfe_EquationsSet_EquationsCreateStart(CamBufEquationsSet,CamBufEquations,Err)
+CALL cmfe_Equations_SparsityTypeSet(CamBufEquations,cmfe_EQUATIONS_SPARSE_MATRICES,Err)
+CALL cmfe_Equations_OutputTypeSet(CamBufEquations,cmfe_EQUATIONS_NO_OUTPUT,Err)
+CALL cmfe_EquationsSet_EquationsCreateFinish(CamBufEquationsSet,Err)
 
 
   !Create the problem
@@ -808,7 +748,7 @@ CALL cmfe_Field_ComponentValuesInitialise(NaiSourceField,cmfe_FIELD_U_VARIABLE_T
   !Set the times
 !*******************************************************************************
 ! YOU CAN CHANGE THIS - you can change the initial time, final time and time step for your RD sim.
-  CALL cmfe_ControlLoop_TimesSet(ControlLoop,0.0_CMISSRP,0.5_CMISSRP,0.01_CMISSRP,Err)
+  CALL cmfe_ControlLoop_TimesSet(ControlLoop,0.0_CMISSRP,100.0_CMISSRP,2.0_CMISSRP,Err)
 !*******************************************************************************
   CALL cmfe_ControlLoop_TimeOutputSet(ControlLoop,1,Err)
   CALL cmfe_ControlLoop_OutputTypeSet(ControlLoop,CMFE_CONTROL_LOOP_PROGRESS_OUTPUT,Err)
@@ -893,6 +833,12 @@ CALL cmfe_Field_ComponentValuesInitialise(NaiSourceField,cmfe_FIELD_U_VARIABLE_T
   CALL cmfe_SolverEquations_SparsityTypeSet(SolverEquations,CMFE_SOLVER_SPARSE_MATRICES,Err)  
   !Add in the equations set
   CALL cmfe_SolverEquations_EquationsSetAdd(SolverEquations,EquationsSet,EquationsSetIndex,Err)
+!!! Not found in earlier versions
+!! Add equations for buffers
+CALL cmfe_SolverEquations_EquationsSetAdd(SolverEquations,FluoEquationsSet,EquationsSetIndex,Err)
+CALL cmfe_SolverEquations_EquationsSetAdd(SolverEquations,CaFluoEquationsSet,EquationsSetIndex,Err)
+CALL cmfe_SolverEquations_EquationsSetAdd(SolverEquations,mBufEquationsSet,EquationsSetIndex,Err)
+CALL cmfe_SolverEquations_EquationsSetAdd(SolverEquations,CamBufEquationsSet,EquationsSetIndex,Err)
   !Finish the creation of the problem solver equations
   CALL cmfe_Problem_SolverEquationsCreateFinish(Problem,Err)
 
@@ -901,7 +847,7 @@ CALL cmfe_Field_ComponentValuesInitialise(NaiSourceField,cmfe_FIELD_U_VARIABLE_T
 
   !Create the equations set boundary conditions
   WRITE(*,*) 'Set up boundary conditions'
-  BCNODES = [1,11]
+  BCNODES = [1,NUMBER_GLOBAL_X_ELEMENTS+1]
   CALL cmfe_BoundaryConditions_Initialise(BoundaryConditions,Err)
   CALL cmfe_SolverEquations_BoundaryConditionsCreateStart(SolverEquations,BoundaryConditions,Err)
   DO node=1,2
@@ -909,24 +855,27 @@ CALL cmfe_Field_ComponentValuesInitialise(NaiSourceField,cmfe_FIELD_U_VARIABLE_T
     CALL cmfe_Decomposition_NodeDomainGet(Decomposition,NODE_NUMBER,1,NodeDomain,Err)
     IF(NodeDomain==ComputationalNodeNumber) THEN
       CONDITION = CMFE_BOUNDARY_CONDITION_FIXED
-      VALUE=0.0001_CMISSRP
-      VALUEa=0.0_CMISSRP
-
+      VALUE=0.0_CMISSRP
+! To fix variable change deludeln to different type (see below)
       CALL cmfe_BoundaryConditions_SetNode(BoundaryConditions,DependentField, &
-       & CMFE_FIELD_U_VARIABLE_TYPE,1,CMFE_NO_GLOBAL_DERIV, &
+       & CMFE_FIELD_DELUDELN_VARIABLE_TYPE,1,CMFE_NO_GLOBAL_DERIV, &
        & NODE_NUMBER,1,CONDITION,VALUE,Err)
-!        CALL cmfe_BoundaryConditions_SetNode(BoundaryConditions,TRPNField, &
-!            & CMFE_FIELD_U_VARIABLE_TYPE,1,CMFE_NO_GLOBAL_DERIV, &
-!            & NODE_NUMBER,1,CONDITION,VALUEa,Err)
-!        CALL cmfe_BoundaryConditions_SetNode(BoundaryConditions,CaSRField, &
-!            & CMFE_FIELD_U_VARIABLE_TYPE,1,CMFE_NO_GLOBAL_DERIV, &
-!            & NODE_NUMBER,1,CONDITION,VALUEa,Err)
-!        CALL cmfe_BoundaryConditions_SetNode(BoundaryConditions,ZOneField, &
-!            & CMFE_FIELD_U_VARIABLE_TYPE,1,CMFE_NO_GLOBAL_DERIV, &
-!            & NODE_NUMBER,1,CONDITION,VALUEa,Err)
-!        CALL cmfe_BoundaryConditions_SetNode(BoundaryConditions,ZTwoField, &
-!            & CMFE_FIELD_U_VARIABLE_TYPE,1,CMFE_NO_GLOBAL_DERIV, &
-!            & NODE_NUMBER,1,CONDITION,VALUEa,Err)
+
+! Set buffer boundary conditions - no flux at boundary
+        CALL cmfe_BoundaryConditions_SetNode(BoundaryConditions,FluoField, &
+            & CMFE_FIELD_DELUDELN_VARIABLE_TYPE,1,CMFE_NO_GLOBAL_DERIV, &
+            & NODE_NUMBER,1,CONDITION,VALUE,Err)
+        CALL cmfe_BoundaryConditions_SetNode(BoundaryConditions,CaFluoField, &
+            & CMFE_FIELD_DELUDELN_VARIABLE_TYPE,1,CMFE_NO_GLOBAL_DERIV, &
+            & NODE_NUMBER,1,CONDITION,VALUE,Err)
+
+! Not nec
+!        CALL cmfe_BoundaryConditions_SetNode(BoundaryConditions,mBufField, &
+!            & CMFE_FIELD_DELUDELN_VARIABLE_TYPE,1,CMFE_NO_GLOBAL_DERIV, &
+!            & NODE_NUMBER,1,CONDITION,VALUE,Err)
+!        CALL cmfe_BoundaryConditions_SetNode(BoundaryConditions,CamBufField, &
+!            & CMFE_FIELD_DELUDELN_VARIABLE_TYPE,1,CMFE_NO_GLOBAL_DERIV, &
+!            & NODE_NUMBER,1,CONDITION,VALUE,Err)
 !        CALL cmfe_BoundaryConditions_SetNode(BoundaryConditions,ZThreeField, &
 !            & CMFE_FIELD_U_VARIABLE_TYPE,1,CMFE_NO_GLOBAL_DERIV, &
 !            & NODE_NUMBER,1,CONDITION,VALUEa,Err)
@@ -937,8 +886,27 @@ CALL cmfe_Field_ComponentValuesInitialise(NaiSourceField,cmfe_FIELD_U_VARIABLE_T
        & 1,1,NODE_NUMBER,1,0_CMISSIntg,Err) 
     ENDIF
   ENDDO
+! Prevent nuclear buffers from diffusing out of the nucleus nucpos
+BCNODES = [14,NUMBER_GLOBAL_X_ELEMENTS+1]
+DO node=1,2
+    NODE_NUMBER = BCNODES(node)
+    CALL cmfe_Decomposition_NodeDomainGet(Decomposition,NODE_NUMBER,1,NodeDomain,Err)
+    IF(NodeDomain==ComputationalNodeNumber) THEN
+        CONDITION = CMFE_BOUNDARY_CONDITION_FIXED
+        VALUE=0.0_CMISSRP
+
+        ! Set buffer boundary conditions - no flux at boundary
+        CALL cmfe_BoundaryConditions_SetNode(BoundaryConditions,mBufField, &
+        & CMFE_FIELD_DELUDELN_VARIABLE_TYPE,1,CMFE_NO_GLOBAL_DERIV, &
+        & NODE_NUMBER,1,CONDITION,VALUE,Err)
+        CALL cmfe_BoundaryConditions_SetNode(BoundaryConditions,CamBufField, &
+        & CMFE_FIELD_DELUDELN_VARIABLE_TYPE,1,CMFE_NO_GLOBAL_DERIV, &
+        & NODE_NUMBER,1,CONDITION,VALUE,Err)
+        ENDIF
+    ENDDO
 
 !!! Added Stuff
+! Why did I add this?
 !DO node=1,NUMBER_GLOBAL_X_ELEMENTS+1
 !    NODE_NUMBER = BCNODES(node)
 !    CALL cmfe_Decomposition_NodeDomainGet(Decomposition,NODE_NUMBER,1,NodeDomain,Err)
@@ -960,13 +928,25 @@ CALL cmfe_Field_ComponentValuesInitialise(NaiSourceField,cmfe_FIELD_U_VARIABLE_T
 !            & NODE_NUMBER,1,CONDITION,0.003_CMISSRP,Err)
 !    ENDIF
 !    ENDDO
-!!! Added Stuff
-!!Change model in nucleus
-!  DO node=3,5
-!    NODE_NUMBER = BCNODES(node)
-!    CALL cmfe_Field_ParameterSetUpdateNode(CompartmentTypeField,cmfe_FIELD_U_VARIABLE_TYPE, &
-!        & cmfe_FIELD_VALUES_SET_TYPE,1,1,node,1,1.0_CMISSDP,Err)
-!  ENDDO
+!!! Added Stuff nucpos
+!Change model in nucleus
+!YOU CAN CHANGE THIS TO CHANGE THE POSITION OF THE NUCLEUS
+  DO node=14,NUMBER_GLOBAL_X_ELEMENTS+1
+    NODE_NUMBER = BCNODES(node)
+    CALL cmfe_Field_ParameterSetUpdateNode(CompartmentTypeField,cmfe_FIELD_U_VARIABLE_TYPE, &
+        & cmfe_FIELD_VALUES_SET_TYPE,1,1,node,1,2.0_CMISSDP,Err)
+    CALL cmfe_Field_ParameterSetUpdateNode(mBufField,cmfe_FIELD_U_VARIABLE_TYPE, &
+        & cmfe_FIELD_VALUES_SET_TYPE,1,1,node,1,0.065_CMISSDP,Err)
+  ENDDO
+
+!Add copy of Hinch model every 2um
+! Make sure closest copy is
+DO node=2,13,4
+    NODE_NUMBER = BCNODES(node)
+        WRITE(*,*) "The nodes with a Hinch model attached include",node
+        CALL cmfe_Field_ParameterSetUpdateNode(CompartmentTypeField,cmfe_FIELD_U_VARIABLE_TYPE, &
+            & cmfe_FIELD_VALUES_SET_TYPE,1,1,node,1,0.0_CMISSDP,Err)
+ENDDO
 
 
 !*******************************************************************************
